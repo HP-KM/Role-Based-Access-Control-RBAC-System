@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBAC System — Database Security</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e2a;
+    --card: #1e2330;
+    --border: #2a3045;
+    --border2: #3a4560;
+    --text: #e8ecf4;
+    --text2: #8b96b0;
+    --text3: #5a6480;
+    --accent: #4f7cff;
+    --accent2: #7c3aed;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --teal: #14b8a6;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 58px; position: sticky; top: 0; z-index: 100; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--text); }
+  .nav-brand .logo { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text2); border: none; background: none; transition: all 0.15s; }
+  .nav-tab:hover { color: var(--text); background: var(--bg3); }
+  .nav-tab.active { color: var(--accent); background: rgba(79,124,255,0.12); }
+  .nav-badge { background: var(--red); color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 20px; margin-left: 4px; }
+
+  /* LAYOUT */
+  .app { display: flex; height: calc(100vh - 58px); }
+  .sidebar { width: 220px; background: var(--bg2); border-right: 1px solid var(--border); padding: 1rem; flex-shrink: 0; overflow-y: auto; }
+  .main { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+  /* SIDEBAR */
+  .sidebar-section { margin-bottom: 1.5rem; }
+  .sidebar-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; padding: 0 8px; }
+  .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.12s; margin-bottom: 2px; }
+  .sidebar-item:hover { color: var(--text); background: var(--bg3); }
+  .sidebar-item.active { color: var(--accent); background: rgba(79,124,255,0.1); }
+  .sidebar-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: var(--text2); }
+
+  /* GRID */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  /* STAT CARDS */
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-meta { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr:last-child td { border-bottom: none; }
+  td.bold { color: var(--text); font-weight: 500; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .badge-green { background: rgba(34,197,94,0.12); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.12); color: var(--red); }
+  .badge-amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+  .badge-blue { background: rgba(79,124,255,0.12); color: var(--accent); }
+  .badge-purple { background: rgba(124,58,237,0.12); color: #a78bfa; }
+  .badge-teal { background: rgba(20,184,166,0.12); color: var(--teal); }
+
+  /* PERMISSIONS MATRIX */
+  .matrix table { font-size: 12px; }
+  .matrix th, .matrix td { padding: 8px 10px; text-align: center; }
+  .matrix th:first-child, .matrix td:first-child { text-align: left; }
+  .perm-yes { color: var(--green); font-size: 15px; }
+  .perm-no { color: var(--border2); font-size: 15px; }
+  .perm-partial { color: var(--amber); font-size: 15px; }
+
+  /* ROLE CARDS */
+  .role-card { border: 1px solid var(--border); border-radius: 10px; padding: 1rem; background: var(--bg3); }
+  .role-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 10px; }
+  .role-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .role-desc { font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+  .role-perms { display: flex; flex-wrap: wrap; gap: 4px; }
+  .perm-pill { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--border); color: var(--text2); }
+
+  /* ACCESS LOG */
+  .log-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-row:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .log-text { font-size: 13px; flex: 1; }
+  .log-time { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .log-action { font-weight: 500; color: var(--text); }
+
+  /* BTN */
+  .btn { padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.12s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+  .btn-danger { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+
+  /* SECTION */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .section-title { font-size: 16px; font-weight: 600; }
+  .section-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; background: var(--bg3); border-radius: 8px; padding: 3px; margin-bottom: 1.25rem; }
+  .tab { flex: 1; text-align: center; padding: 6px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--text2); transition: all 0.12s; }
+  .tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+  /* ALERT */
+  .alert { display: flex; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 1rem; }
+  .alert-warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: var(--amber); }
+  .alert-danger { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+  .alert-info { background: rgba(79,124,255,0.08); border: 1px solid rgba(79,124,255,0.2); color: var(--accent); }
+
+  /* TOGGLE */
+  .toggle { position: relative; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--border2); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+  input:checked + .toggle-slider { background: var(--accent); }
+  input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  /* HIDDEN PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* FORM */
+  .form-group { margin-bottom: 1rem; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); outline: none; }
+  .form-input:focus { border-color: var(--accent); }
+  select.form-input option { background: var(--bg2); }
+
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    .grid3 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="logo">🔐</div>
+    RBAC Shield
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard', this)">Dashboard</button>
+    <button class="nav-tab" onclick="showPage('users', this)">Users</button>
+    <button class="nav-tab" onclick="showPage('roles', this)">Roles</button>
+    <button class="nav-tab" onclick="showPage('permissions', this)">Permissions</button>
+    <button class="nav-tab" onclick="showPage('logs', this)">Audit Logs <span class="nav-badge">3</span></button>
+    <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:12px;color:var(--text2)">Admin Mode</span>
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+  </div>
+</nav>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Resources</div>
+      <div class="sidebar-item active">🗄️ All Databases</div>
+      <div class="sidebar-item">📋 Users Table</div>
+      <div class="sidebar-item">💳 Payments Table</div>
+      <div class="sidebar-item">📦 Orders Table</div>
+      <div class="sidebar-item">📊 Analytics DB</div>
+      <div class="sidebar-item">🔒 Secrets Vault</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Roles</div>
+      <div class="sidebar-item"><div class="sidebar-dot" style="background:#ef4444"></div>Super Admin</div>
+      <div class="sidebar-item"><div class="sidebar-dot" style="background:#f59e0b"></div>DB Admin</div>
+      <div class="sidebar-item"><div class="sidebar-dot" style="background:#4f7cff"></div>Developer</div>
+      <div class="sidebar-item"><div class="sidebar-dot" style="background:#22c55e"></div>Analyst</div>
+      <div class="sidebar-item"><div class="sidebar-dot" style="background:#8b96b0"></div>Read Only</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick Actions</div>
+      <div class="sidebar-item" onclick="showPage('users',document.querySelector('.nav-tab:nth-child(2)'))">➕ Add User</div>
+      <div class="sidebar-item" onclick="showPage('roles',document.querySelector('.nav-tab:nth-child(3)'))">🛡️ New Role</div>
+      <div class="sidebar-item">🚫 Revoke Access</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Security Overview</div>
+          <div class="section-sub">Role-Based Access Control — Production Environment</div>
+        </div>
+        <button class="btn btn-primary">⚡ Run Security Scan</button>
+      </div>
+
+      <div class="alert alert-warn" style="margin-bottom:1rem">
+        ⚠️ <strong>2 users</strong> have not logged in for 30+ days. Consider revoking access.
+      </div>
+
+      <div class="grid4" style="margin-bottom:1.25rem">
+        <div class="stat">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value" style="color:var(--accent)">24</div>
+          <div class="stat-meta up">+3 this month</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Active Roles</div>
+          <div class="stat-value" style="color:var(--teal)">5</div>
+          <div class="stat-meta" style="color:var(--text3)">Across 3 environments</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Permissions</div>
+          <div class="stat-value" style="color:#a78bfa">48</div>
+          <div class="stat-meta" style="color:var(--text3)">12 resource types</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Blocked Attempts</div>
+          <div class="stat-value" style="color:var(--red)">7</div>
+          <div class="stat-meta down">Last 24 hours</div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:1.25rem">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div class="card-title">Role Distribution</div>
+            <span class="badge badge-blue">24 users</span>
+          </div>
+          <div id="role-distribution"></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div class="card-title">Recent Security Events</div>
+            <span class="badge badge-red">Live</span>
+          </div>
+          <div>
+            <div class="log-row">
+              <div class="log-dot" style="background:var(--red)"></div>
+              <div class="log-text">
+                <div class="log-action">Access Denied — DROP TABLE attempt</div>
+                <div class="log-time">dev_user@company.com · payments_db · 2 min ago</div>
+              </div>
+            </div>
+            <div class="log-row">
+              <div class="log-dot" style="background:var(--green)"></div>
+              <div class="log-text">
+                <div class="log-action">Role Assigned — Analyst role granted</div>
+                <div class="log-time">admin@company.com · maria.silva · 18 min ago</div>
+              </div>
+            </div>
+            <div class="log-row">
+              <div class="log-dot" style="background:var(--amber)"></div>
+              <div class="log-text">
+                <div class="log-action">Permission Escalation — MFA required</div>
+                <div class="log-time">john.doe@company.com · secrets_vault · 45 min ago</div>
+              </div>
+            </div>
+            <div class="log-row">
+              <div class="log-dot" style="background:var(--red)"></div>
+              <div class="log-text">
+                <div class="log-action">Login Failed — IP blocked (3 attempts)</div>
+                <div class="log-time">unknown · 192.168.1.104 · 1 hr ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <div class="card-title">Active Sessions</div>
+          <span style="font-size:12px;color:var(--text2)">8 users online now</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Role</th><th>Database</th><th>Session Duration</th><th>IP Address</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="bold">alice.johnson</td><td><span class="badge badge-red">Super Admin</span></td><td>All Resources</td><td>2h 14m</td><td>10.0.0.1</td><td><span class="badge badge-green">● Active</span></td></tr>
+              <tr><td class="bold">bob.smith</td><td><span class="badge badge-amber">DB Admin</span></td><td>users_db, orders_db</td><td>47m</td><td>10.0.0.8</td><td><span class="badge badge-green">● Active</span></td></tr>
+              <tr><td class="bold">carol.white</td><td><span class="badge badge-blue">Developer</span></td><td>dev_db</td><td>1h 5m</td><td>10.0.0.22</td><td><span class="badge badge-green">● Active</span></td></tr>
+              <tr><td class="bold">dan.lee</td><td><span class="badge badge-teal">Analyst</span></td><td>analytics_db</td><td>3h 2m</td><td>10.0.0.15</td><td><span class="badge badge-amber">● Idle</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users" class="page">
+      <div class="section-header">
+        <div>
+          <div class="section-title">User Management</div>
+          <div class="section-sub">Manage users and their role assignments</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost">↓ Export</button>
+          <button class="btn btn-primary" onclick="showAddUserModal()">+ Add User</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:1rem">
+          <input class="form-input" style="width:220px" placeholder="🔍  Search users..." oninput="filterUsers(this.value)">
+          <select class="form-input" style="width:150px" onchange="filterByRole(this.value)">
+            <option value="">All Roles</option>
+            <option>Super Admin</option><option>DB Admin</option><option>Developer</option><option>Analyst</option><option>Read Only</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table id="users-table">
+            <thead><tr><th>User</th><th>Role</th><th>Assigned Databases</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr data-name="alice johnson" data-role="Super Admin"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(239,68,68,0.15);color:var(--red)">AJ</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Alice Johnson</div><div style="font-size:11px;color:var(--text3)">alice.j@company.com</div></div></div></td><td><span class="badge badge-red">Super Admin</span></td><td>All Resources</td><td>Today 09:12</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editUser('Alice Johnson')">Edit</button></td></tr>
+              <tr data-name="bob smith" data-role="DB Admin"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(245,158,11,0.15);color:var(--amber)">BS</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Bob Smith</div><div style="font-size:11px;color:var(--text3)">bob.s@company.com</div></div></div></td><td><span class="badge badge-amber">DB Admin</span></td><td>users_db, orders_db</td><td>Today 10:45</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editUser('Bob Smith')">Edit</button></td></tr>
+              <tr data-name="carol white" data-role="Developer"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(79,124,255,0.15);color:var(--accent)">CW</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Carol White</div><div style="font-size:11px;color:var(--text3)">carol.w@company.com</div></div></div></td><td><span class="badge badge-blue">Developer</span></td><td>dev_db, staging_db</td><td>Today 08:30</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editUser('Carol White')">Edit</button></td></tr>
+              <tr data-name="dan lee" data-role="Analyst"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(20,184,166,0.15);color:var(--teal)">DL</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Dan Lee</div><div style="font-size:11px;color:var(--text3)">dan.l@company.com</div></div></div></td><td><span class="badge badge-teal">Analyst</span></td><td>analytics_db</td><td>Today 11:20</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editUser('Dan Lee')">Edit</button></td></tr>
+              <tr data-name="eva martinez" data-role="Read Only"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(139,150,176,0.15);color:var(--text2)">EM</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Eva Martinez</div><div style="font-size:11px;color:var(--text3)">eva.m@company.com</div></div></div></td><td><span class="badge" style="background:rgba(139,150,176,0.1);color:var(--text2)">Read Only</span></td><td>reports_db</td><td>3 days ago</td><td><span class="badge badge-amber">Idle</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editUser('Eva Martinez')">Edit</button></td></tr>
+              <tr data-name="frank chen" data-role="Developer"><td><div style="display:flex;align-items:center;gap:10px"><div class="user-avatar" style="background:rgba(79,124,255,0.15);color:var(--accent)">FC</div><div><div style="font-weight:500;font-size:13px;color:var(--text)">Frank Chen</div><div style="font-size:11px;color:var(--text3)">frank.c@company.com</div></div></div></td><td><span class="badge badge-blue">Developer</span></td><td>dev_db</td><td>Yesterday</td><td><span class="badge badge-red">Inactive 31d</span></td><td><button class="btn btn-danger" style="padding:4px 10px;font-size:12px" onclick="revokeUser('Frank Chen')">Revoke</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add User Modal -->
+      <div id="add-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;display:none;align-items:center;justify-content:center">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;width:400px;max-width:90vw">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <div style="font-size:15px;font-weight:600">Add New User</div>
+            <button onclick="closeModal()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px">✕</button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="new-name" placeholder="e.g. Jane Doe">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="new-email" placeholder="jane.doe@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select class="form-input" id="new-role">
+              <option>Read Only</option><option>Analyst</option><option>Developer</option><option>DB Admin</option><option>Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Database Access</label>
+            <select class="form-input" id="new-db" multiple style="height:80px">
+              <option>users_db</option><option>orders_db</option><option>analytics_db</option><option>dev_db</option><option>payments_db</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:1.25rem">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" style="flex:1" onclick="addUser()">Create User</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div id="page-roles" class="page">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Role Management</div>
+          <div class="section-sub">Define roles and their permission sets</div>
+        </div>
+        <button class="btn btn-primary">+ Create Role</button>
+      </div>
+
+      <div class="grid3" style="margin-bottom:1.25rem">
+        <div class="role-card">
+          <div class="role-icon" style="background:rgba(239,68,68,0.12)">🔴</div>
+          <div class="role-name">Super Admin</div>
+          <div class="role-desc">Full system access. Manages all roles, users, and configurations.</div>
+          <div class="role-perms">
+            <span class="perm-pill">SELECT</span><span class="perm-pill">INSERT</span><span class="perm-pill">UPDATE</span><span class="perm-pill">DELETE</span><span class="perm-pill">DROP</span><span class="perm-pill">CREATE</span><span class="perm-pill">GRANT</span><span class="perm-pill">REVOKE</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">2 users assigned</div>
+        </div>
+        <div class="role-card">
+          <div class="role-icon" style="background:rgba(245,158,11,0.12)">🟡</div>
+          <div class="role-name">DB Admin</div>
+          <div class="role-desc">Database management without user/role provisioning access.</div>
+          <div class="role-perms">
+            <span class="perm-pill">SELECT</span><span class="perm-pill">INSERT</span><span class="perm-pill">UPDATE</span><span class="perm-pill">DELETE</span><span class="perm-pill">CREATE</span><span class="perm-pill">INDEX</span><span class="perm-pill">BACKUP</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">4 users assigned</div>
+        </div>
+        <div class="role-card">
+          <div class="role-icon" style="background:rgba(79,124,255,0.12)">🔵</div>
+          <div class="role-name">Developer</div>
+          <div class="role-desc">Read/Write on dev and staging databases only. No production write.</div>
+          <div class="role-perms">
+            <span class="perm-pill">SELECT</span><span class="perm-pill">INSERT</span><span class="perm-pill">UPDATE</span><span class="perm-pill">DELETE*</span><span class="perm-pill">CREATE*</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">9 users assigned · *dev/staging only</div>
+        </div>
+        <div class="role-card">
+          <div class="role-icon" style="background:rgba(20,184,166,0.12)">🟢</div>
+          <div class="role-name">Analyst</div>
+          <div class="role-desc">Read-only access to analytics and reporting databases.</div>
+          <div class="role-perms">
+            <span class="perm-pill">SELECT</span><span class="perm-pill">EXPLAIN</span><span class="perm-pill">EXPORT</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">6 users assigned</div>
+        </div>
+        <div class="role-card">
+          <div class="role-icon" style="background:rgba(139,150,176,0.12)">⚪</div>
+          <div class="role-name">Read Only</div>
+          <div class="role-desc">SELECT-only on approved tables. No data export allowed.</div>
+          <div class="role-perms">
+            <span class="perm-pill">SELECT</span>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">3 users assigned</div>
+        </div>
+        <div class="role-card" style="border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;min-height:180px" onclick="alert('Role builder would open here.')">
+          <div style="font-size:28px;color:var(--border2);margin-bottom:8px">+</div>
+          <div style="font-size:13px;color:var(--text3)">Create Custom Role</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">Role Hierarchy</div>
+        <div style="display:flex;align-items:flex-end;gap:6px;padding:1rem 0">
+          <div style="text-align:center">
+            <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--red)">Super Admin</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">All permissions</div>
+          </div>
+          <div style="color:var(--text3);font-size:18px;margin-bottom:4px">⊇</div>
+          <div style="text-align:center">
+            <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--amber)">DB Admin</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">Minus GRANT/REVOKE</div>
+          </div>
+          <div style="color:var(--text3);font-size:18px;margin-bottom:4px">⊇</div>
+          <div style="text-align:center">
+            <div style="background:rgba(79,124,255,0.12);border:1px solid rgba(79,124,255,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--accent)">Developer</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">Dev/Staging only</div>
+          </div>
+          <div style="color:var(--text3);font-size:18px;margin-bottom:4px">⊇</div>
+          <div style="text-align:center">
+            <div style="background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--teal)">Analyst</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">Read + Export</div>
+          </div>
+          <div style="color:var(--text3);font-size:18px;margin-bottom:4px">⊇</div>
+          <div style="text-align:center">
+            <div style="background:rgba(139,150,176,0.12);border:1px solid rgba(139,150,176,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text2)">Read Only</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">SELECT only</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS MATRIX -->
+    <div id="page-permissions" class="page">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Permissions Matrix</div>
+          <div class="section-sub">Fine-grained access control per role and resource</div>
+        </div>
+        <button class="btn btn-primary">+ Add Permission</button>
+      </div>
+
+      <div class="alert alert-info">ℹ️ Click any cell to toggle permission. Changes require admin approval before taking effect.</div>
+
+      <div class="card matrix">
+        <div class="tabs">
+          <div class="tab active" onclick="switchMatrix('sql', this)">SQL Operations</div>
+          <div class="tab" onclick="switchMatrix('tables', this)">Table Access</div>
+          <div class="tab" onclick="switchMatrix('admin', this)">Admin Actions</div>
+        </div>
+        <div id="matrix-sql" class="matrix-view">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Permission</th>
+                  <th><span class="badge badge-red">Super Admin</span></th>
+                  <th><span class="badge badge-amber">DB Admin</span></th>
+                  <th><span class="badge badge-blue">Developer</span></th>
+                  <th><span class="badge badge-teal">Analyst</span></th>
+                  <th><span class="badge" style="background:rgba(139,150,176,0.1);color:var(--text2)">Read Only</span></th>
+                </tr>
+              </thead>
+              <tbody id="matrix-body">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:1.25rem">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1rem">Principle of Least Privilege</div>
+          <div id="privilege-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1rem">Row-Level Security (RLS) Rules</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Table</th><th>Role</th><th>Condition</th></tr></thead>
+              <tbody>
+                <tr><td>payments</td><td><span class="badge badge-teal">Analyst</span></td><td style="font-size:12px;color:var(--teal);font-family:monospace">amount &lt; 10000</td></tr>
+                <tr><td>users</td><td><span class="badge badge-blue">Developer</span></td><td style="font-size:12px;color:var(--teal);font-family:monospace">env = 'dev'</td></tr>
+                <tr><td>orders</td><td><span class="badge badge-teal">Analyst</span></td><td style="font-size:12px;color:var(--teal);font-family:monospace">region = user.region</td></tr>
+                <tr><td>secrets</td><td><span class="badge badge-amber">DB Admin</span></td><td style="font-size:12px;color:var(--teal);font-family:monospace">mfa_verified = true</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOGS -->
+    <div id="page-logs" class="page">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Audit Logs</div>
+          <div class="section-sub">Immutable trail of all database access events</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost">↓ Export CSV</button>
+          <button class="btn btn-ghost">📅 Date Range</button>
+        </div>
+      </div>
+
+      <div class="grid4" style="margin-bottom:1.25rem">
+        <div class="stat"><div class="stat-label">Events Today</div><div class="stat-value" style="color:var(--accent)">1,248</div></div>
+        <div class="stat"><div class="stat-label">Denied</div><div class="stat-value" style="color:var(--red)">7</div></div>
+        <div class="stat"><div class="stat-label">Escalations</div><div class="stat-value" style="color:var(--amber)">3</div></div>
+        <div class="stat"><div class="stat-label">Data Exports</div><div class="stat-value" style="color:var(--green)">12</div></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:1rem">
+          <select class="form-input" style="width:140px">
+            <option>All Events</option><option>Denied</option><option>Granted</option><option>Escalation</option><option>Role Change</option>
+          </select>
+          <select class="form-input" style="width:140px">
+            <option>All Roles</option><option>Super Admin</option><option>DB Admin</option><option>Developer</option>
+          </select>
+          <input class="form-input" placeholder="Search user or query..." style="flex:1">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Resource</th><th>Query Preview</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 14:32:07</td><td class="bold">alice.johnson</td><td>SELECT</td><td>users_db</td><td style="font-family:monospace;font-size:11px;color:var(--teal)">SELECT * FROM users LIMIT 100</td><td><span class="badge badge-green">Granted</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 14:31:45</td><td class="bold">dev_user</td><td>DROP</td><td>payments_db</td><td style="font-family:monospace;font-size:11px;color:var(--red)">DROP TABLE payments</td><td><span class="badge badge-red">Denied</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 14:28:12</td><td class="bold">bob.smith</td><td>INSERT</td><td>orders_db</td><td style="font-family:monospace;font-size:11px;color:var(--teal)">INSERT INTO orders VALUES (...)</td><td><span class="badge badge-green">Granted</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 14:15:30</td><td class="bold">carol.white</td><td>UPDATE</td><td>prod_db</td><td style="font-family:monospace;font-size:11px;color:var(--red)">UPDATE users SET role=...</td><td><span class="badge badge-red">Denied</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 13:58:00</td><td class="bold">admin@co</td><td>GRANT</td><td>analytics_db</td><td style="font-family:monospace;font-size:11px;color:var(--teal)">GRANT SELECT ON analytics TO 'maria'</td><td><span class="badge badge-green">Granted</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 13:44:19</td><td class="bold">john.doe</td><td>ESCALATION</td><td>secrets_vault</td><td style="font-family:monospace;font-size:11px;color:var(--amber)">SELECT * FROM api_keys</td><td><span class="badge badge-amber">MFA Required</span></td></tr>
+              <tr><td style="font-family:monospace;font-size:11px;color:var(--text3)">2025-01-15 13:20:05</td><td class="bold">dan.lee</td><td>EXPORT</td><td>analytics_db</td><td style="font-family:monospace;font-size:11px;color:var(--teal)">EXPORT TABLE monthly_revenue</td><td><span class="badge badge-green">Granted</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="section-header">
+        <div class="section-title">Security Settings</div>
+      </div>
+      <div class="grid2">
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title" style="margin-bottom:1rem">Authentication Policies</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Multi-Factor Authentication</div><div style="font-size:12px;color:var(--text2)">Required for DB Admin and above</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Session Timeout</div><div style="font-size:12px;color:var(--text2)">Auto-logout after 30 minutes idle</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">IP Allowlisting</div><div style="font-size:12px;color:var(--text2)">Restrict access to corporate IPs only</div></div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Brute Force Protection</div><div style="font-size:12px;color:var(--text2)">Block IP after 5 failed attempts</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1rem">Audit & Compliance</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Full Query Logging</div><div style="font-size:12px;color:var(--text2)">Log all SQL queries with parameters</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Anomaly Detection</div><div style="font-size:12px;color:var(--text2)">Alert on unusual query patterns</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Data Masking</div><div style="font-size:12px;color:var(--text2)">Mask PII for non-admin roles</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div><div style="font-size:13px;font-weight:500">Encryption at Rest</div><div style="font-size:12px;color:var(--text2)">AES-256 for all sensitive tables</div></div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">Password Policy</div>
+        <div class="grid3">
+          <div class="form-group"><label class="form-label">Minimum Length</label><input class="form-input" type="number" value="12"></div>
+          <div class="form-group"><label class="form-label">Max Age (days)</label><input class="form-input" type="number" value="90"></div>
+          <div class="form-group"><label class="form-label">Min Complexity Score</label><input class="form-input" type="number" value="3"></div>
+        </div>
+        <button class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const pages = ['dashboard','users','roles','permissions','logs','settings'];
+
+function showPage(name, btn) {
+  pages.forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('active', p === name);
+  });
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// Role distribution bars
+const roles = [
+  { name: 'Developer', count: 9, color: '#4f7cff' },
+  { name: 'Analyst', count: 6, color: '#14b8a6' },
+  { name: 'DB Admin', count: 4, color: '#f59e0b' },
+  { name: 'Read Only', count: 3, color: '#8b96b0' },
+  { name: 'Super Admin', count: 2, color: '#ef4444' },
+];
+const rd = document.getElementById('role-distribution');
+roles.forEach(r => {
+  const pct = Math.round(r.count / 24 * 100);
+  rd.innerHTML += `<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+      <span style="color:var(--text2)">${r.name}</span>
+      <span style="color:var(--text3)">${r.count} users</span>
+    </div>
+    <div style="background:var(--border);border-radius:4px;height:6px">
+      <div style="width:${pct}%;background:${r.color};border-radius:4px;height:6px;transition:width 1s ease"></div>
+    </div>
+  </div>`;
+});
+
+// Permissions matrix
+const perms = [
+  { op: 'SELECT', sa: '✓', dba: '✓', dev: '✓', an: '✓', ro: '✓' },
+  { op: 'INSERT', sa: '✓', dba: '✓', dev: '✓', an: '✗', ro: '✗' },
+  { op: 'UPDATE', sa: '✓', dba: '✓', dev: '~', an: '✗', ro: '✗' },
+  { op: 'DELETE', sa: '✓', dba: '✓', dev: '~', an: '✗', ro: '✗' },
+  { op: 'CREATE', sa: '✓', dba: '✓', dev: '~', an: '✗', ro: '✗' },
+  { op: 'DROP', sa: '✓', dba: '✗', dev: '✗', an: '✗', ro: '✗' },
+  { op: 'TRUNCATE', sa: '✓', dba: '✓', dev: '✗', an: '✗', ro: '✗' },
+  { op: 'GRANT', sa: '✓', dba: '✗', dev: '✗', an: '✗', ro: '✗' },
+  { op: 'REVOKE', sa: '✓', dba: '✗', dev: '✗', an: '✗', ro: '✗' },
+  { op: 'BACKUP', sa: '✓', dba: '✓', dev: '✗', an: '✗', ro: '✗' },
+  { op: 'EXPORT', sa: '✓', dba: '✓', dev: '~', an: '✓', ro: '✗' },
+  { op: 'INDEX', sa: '✓', dba: '✓', dev: '~', an: '✗', ro: '✗' },
+];
+const mb = document.getElementById('matrix-body');
+perms.forEach(p => {
+  const cell = v => {
+    if (v === '✓') return `<td><span class="perm-yes">●</span></td>`;
+    if (v === '✗') return `<td><span class="perm-no">○</span></td>`;
+    return `<td><span class="perm-partial">◑</span></td>`;
+  };
+  mb.innerHTML += `<tr><td class="bold" style="font-family:monospace;font-size:12px">${p.op}</td>${cell(p.sa)}${cell(p.dba)}${cell(p.dev)}${cell(p.an)}${cell(p.ro)}</tr>`;
+});
+
+// Privilege coverage bars
+const pb = document.getElementById('privilege-bars');
+const cov = [
+  { role:'Super Admin', pct:100, color:'#ef4444' },
+  { role:'DB Admin', pct:72, color:'#f59e0b' },
+  { role:'Developer', pct:50, color:'#4f7cff' },
+  { role:'Analyst', pct:25, color:'#14b8a6' },
+  { role:'Read Only', pct:8, color:'#8b96b0' },
+];
+cov.forEach(c => {
+  pb.innerHTML += `<div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+      <span style="color:var(--text2)">${c.role}</span><span style="color:${c.color};font-weight:600">${c.pct}%</span>
+    </div>
+    <div style="background:var(--border);border-radius:4px;height:8px">
+      <div style="width:${c.pct}%;background:${c.color};border-radius:4px;height:8px"></div>
+    </div>
+  </div>`;
+});
+
+function switchMatrix(type, btn) {
+  document.querySelectorAll('.matrix-view').forEach(v => v.style.display = 'none');
+  document.getElementById('matrix-'+type).style.display = 'block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function filterUsers(q) {
+  document.querySelectorAll('#users-table tbody tr').forEach(tr => {
+    tr.style.display = tr.dataset.name.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+function filterByRole(r) {
+  document.querySelectorAll('#users-table tbody tr').forEach(tr => {
+    tr.style.display = (!r || tr.dataset.role === r) ? '' : 'none';
+  });
+}
+
+function showAddUserModal() {
+  document.getElementById('add-user-modal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('add-user-modal').style.display = 'none';
+}
+function addUser() {
+  const name = document.getElementById('new-name').value;
+  if (!name) { alert('Please enter a name'); return; }
+  alert(`User "${name}" created and welcome email sent!`);
+  closeModal();
+}
+function editUser(name) { alert(`Edit user: ${name}\n(Full editor would open in production)`); }
+function revokeUser(name) {
+  if (confirm(`Revoke all access for ${name}? This will immediately terminate their sessions.`)) {
+    alert(`Access revoked for ${name}. Audit log entry created.`);
+  }
+}
+
+// Legend note at bottom
+document.querySelector('.matrix').insertAdjacentHTML('beforeend',
+  '<div style="padding:10px 0;font-size:11px;color:var(--text3)">● Full access &nbsp; ◑ Partial (dev/staging env only) &nbsp; ○ No access</div>'
+);
+</script>
+</body>
+</html>

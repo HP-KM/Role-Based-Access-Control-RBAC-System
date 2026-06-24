@@ -1,0 +1,350 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+
+.tab-bar { display: flex; gap: 4px; border-bottom: 0.5px solid var(--color-border-tertiary); padding: 0 0 0 0; margin-bottom: 20px; }
+.tab { padding: 8px 16px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; background: none; border-top: none; border-left: none; border-right: none; }
+.tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); font-weight: 500; }
+
+.section-title { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; }
+.card.selected { border-color: var(--color-border-info); background: var(--color-background-info); }
+.card-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; }
+.pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; margin: 2px 2px 2px 0; }
+.pill-blue { background: var(--color-background-info); color: var(--color-text-info); }
+.pill-green { background: var(--color-background-success); color: var(--color-text-success); }
+.pill-red { background: var(--color-background-danger); color: var(--color-text-danger); }
+.pill-gray { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+.pill-warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+.av-red { background: var(--color-background-danger); color: var(--color-text-danger); }
+.av-blue { background: var(--color-background-info); color: var(--color-text-info); }
+.av-green { background: var(--color-background-success); color: var(--color-text-success); }
+.av-warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+
+.matrix-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.matrix-table th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 6px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.matrix-table td { padding: 6px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+.matrix-table tr:last-child td { border-bottom: none; }
+.matrix-table .perm-col { text-align: center; }
+.check { color: var(--color-text-success); font-size: 14px; }
+.cross { color: var(--color-text-tertiary); font-size: 14px; }
+
+.check-panel { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 16px; }
+.check-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.check-row label { font-size: 12px; color: var(--color-text-secondary); min-width: 70px; }
+.check-row select { flex: 1; min-width: 120px; }
+.result-box { border-radius: var(--border-radius-md); padding: 12px 16px; margin-top: 12px; }
+.result-grant { background: var(--color-background-success); border: 0.5px solid var(--color-border-success); }
+.result-deny { background: var(--color-background-danger); border: 0.5px solid var(--color-border-danger); }
+
+.audit-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12px; }
+.audit-row:last-child { border-bottom: none; }
+.audit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--color-text-success); }
+.dot-red { background: var(--color-text-danger); }
+
+.concept-block { padding: 14px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.concept-block:last-child { border-bottom: none; }
+.concept-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.concept-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.ci-blue { background: var(--color-background-info); }
+.ci-green { background: var(--color-background-success); }
+.ci-amber { background: var(--color-background-warning); }
+.concept-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+
+.api-block { margin-bottom: 12px; border-radius: var(--border-radius-md); overflow: hidden; border: 0.5px solid var(--color-border-tertiary); }
+.api-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+.method { font-size: 11px; font-weight: 500; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); }
+.m-get { background: var(--color-background-success); color: var(--color-text-success); }
+.m-post { background: var(--color-background-info); color: var(--color-text-info); }
+.m-del { background: var(--color-background-danger); color: var(--color-text-danger); }
+.m-patch { background: var(--color-background-warning); color: var(--color-text-warning); }
+.api-path { font-size: 12px; font-family: var(--font-mono); color: var(--color-text-primary); }
+.api-desc { font-size: 12px; color: var(--color-text-secondary); padding: 8px 12px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+
+<h2 class="sr-only">RBAC (Role-Based Access Control) interactive explainer with users, roles, permissions, access checker, and API reference</h2>
+
+<div style="padding: 0 0 16px;">
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('concept')"><i class="ti ti-book-2" aria-hidden="true"></i> Concept</button>
+    <button class="tab" onclick="showTab('roles')"><i class="ti ti-shield" aria-hidden="true"></i> Roles & Permissions</button>
+    <button class="tab" onclick="showTab('users')"><i class="ti ti-users" aria-hidden="true"></i> Users</button>
+    <button class="tab" onclick="showTab('matrix')"><i class="ti ti-table" aria-hidden="true"></i> Access Matrix</button>
+    <button class="tab" onclick="showTab('checker')"><i class="ti ti-key" aria-hidden="true"></i> Try it</button>
+    <button class="tab" onclick="showTab('api')"><i class="ti ti-api" aria-hidden="true"></i> API</button>
+  </div>
+
+  <!-- CONCEPT -->
+  <div id="tab-concept" class="tab-content active">
+    <p style="font-size:13px; color:var(--color-text-secondary); margin-bottom:16px; line-height:1.7;">RBAC controls <em>who</em> can do <em>what</em> on <em>which resource</em> — without hardcoding rules per user. Access flows through three layers:</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px; margin-bottom:16px;">
+      <div class="card" style="border-left:3px solid #3B8BD4; border-radius:0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+        <div style="font-size:11px;font-weight:500;color:var(--color-text-info);margin-bottom:6px;letter-spacing:.05em;">PERMISSION</div>
+        <div class="card-title">posts:delete</div>
+        <div class="card-sub">A single allowed action on a resource — the finest unit of access.</div>
+      </div>
+      <div class="card" style="border-left:3px solid #1D9E75; border-radius:0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+        <div style="font-size:11px;font-weight:500;color:var(--color-text-success);margin-bottom:6px;letter-spacing:.05em;">ROLE</div>
+        <div class="card-title">Admin</div>
+        <div class="card-sub">A named bundle of permissions assigned to users with a similar job.</div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <svg width="100%" viewBox="0 0 640 80" role="img"><title>RBAC flow: User gets Role, Role contains Permissions, Permissions grant Resource access</title>
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+        <g class="c-blue"><rect x="20" y="22" width="110" height="36" rx="8" stroke-width="0.5"/><text class="th" x="75" y="40" text-anchor="middle" dominant-baseline="central">User</text></g>
+        <line x1="132" y1="40" x2="170" y2="40" class="arr" marker-end="url(#arrow)"/>
+        <text class="ts" x="151" y="32" text-anchor="middle">assigned</text>
+        <g class="c-teal"><rect x="172" y="22" width="110" height="36" rx="8" stroke-width="0.5"/><text class="th" x="227" y="40" text-anchor="middle" dominant-baseline="central">Role</text></g>
+        <line x1="284" y1="40" x2="322" y2="40" class="arr" marker-end="url(#arrow)"/>
+        <text class="ts" x="303" y="32" text-anchor="middle">contains</text>
+        <g class="c-amber"><rect x="324" y="22" width="130" height="36" rx="8" stroke-width="0.5"/><text class="th" x="389" y="40" text-anchor="middle" dominant-baseline="central">Permissions</text></g>
+        <line x1="456" y1="40" x2="494" y2="40" class="arr" marker-end="url(#arrow)"/>
+        <text class="ts" x="475" y="32" text-anchor="middle">grants</text>
+        <g class="c-gray"><rect x="496" y="22" width="120" height="36" rx="8" stroke-width="0.5"/><text class="th" x="556" y="40" text-anchor="middle" dominant-baseline="central">Resources</text></g>
+      </svg>
+    </div>
+    <div class="concept-block">
+      <div class="concept-label"><span class="concept-icon ci-blue">🔑</span> Why not assign permissions directly to users?</div>
+      <div class="concept-desc">With 1,000 users and 50 permissions, direct assignment = 50,000 rules to manage. One new hire gets one role, inheriting the right permissions automatically. One policy change updates one role, instantly affecting all members.</div>
+    </div>
+    <div class="concept-block">
+      <div class="concept-label"><span class="concept-icon ci-green">🔒</span> Principle of least privilege</div>
+      <div class="concept-desc">Each user gets only the permissions their role actually needs. A Viewer can read posts but cannot delete or manage users — even if they find an endpoint. The system enforces it.</div>
+    </div>
+    <div class="concept-block">
+      <div class="concept-label"><span class="concept-icon ci-amber">📋</span> Every check is logged</div>
+      <div class="concept-desc">RBAC systems audit every access attempt — granted or denied. This makes security reviews, compliance, and incident forensics straightforward.</div>
+    </div>
+  </div>
+
+  <!-- ROLES -->
+  <div id="tab-roles" class="tab-content">
+    <p class="section-title">4 roles in the blog platform demo</p>
+    <div id="roles-grid"></div>
+  </div>
+
+  <!-- USERS -->
+  <div id="tab-users" class="tab-content">
+    <p class="section-title">Demo users</p>
+    <div id="users-grid"></div>
+  </div>
+
+  <!-- MATRIX -->
+  <div id="tab-matrix" class="tab-content">
+    <p class="section-title">Who can do what</p>
+    <div style="overflow-x:auto;">
+      <table class="matrix-table" id="matrix-table"></table>
+    </div>
+  </div>
+
+  <!-- CHECKER -->
+  <div id="tab-checker" class="tab-content">
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px;">Simulate the <code style="font-size:12px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px;">POST /check</code> endpoint — pick a user, resource, and permission to see if access is granted.</p>
+    <div class="check-panel">
+      <div class="check-row">
+        <label>User</label>
+        <select id="ck-user">
+          <option value="alice">Alice (Admin)</option>
+          <option value="bob">Bob (Author)</option>
+          <option value="carol">Carol (Viewer)</option>
+          <option value="dave">Dave (Moderator)</option>
+        </select>
+      </div>
+      <div class="check-row">
+        <label>Permission</label>
+        <select id="ck-perm">
+          <option>posts:read</option>
+          <option>posts:write</option>
+          <option>posts:delete</option>
+          <option>users:read</option>
+          <option>users:manage</option>
+          <option>settings:edit</option>
+          <option>comments:mod</option>
+        </select>
+      </div>
+      <div class="check-row">
+        <label>Resource</label>
+        <select id="ck-res">
+          <option value="post/42">post/42</option>
+          <option value="user/7">user/7</option>
+          <option value="site/config">site/config</option>
+          <option value="comment/3">comment/3</option>
+        </select>
+      </div>
+      <button onclick="runCheck()" style="width:100%;margin-top:4px;padding:9px;">Check access ↗</button>
+      <div id="check-result" style="display:none;"></div>
+    </div>
+    <div style="margin-top:20px;">
+      <p class="section-title">Audit log</p>
+      <div id="audit-log" style="max-height:240px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- API -->
+  <div id="tab-api" class="tab-content">
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px;">Run with <code style="font-size:12px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px;">uvicorn api:app --reload</code> — then explore at <code style="font-size:12px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px;">http://localhost:8000/docs</code></p>
+    <div id="api-list"></div>
+  </div>
+</div>
+
+<script>
+const PERMS = ['posts:read','posts:write','posts:delete','users:read','users:manage','settings:edit','comments:mod'];
+
+const ROLES = {
+  Viewer:    { desc:'Read-only access', perms:['posts:read'], color:'pill-gray' },
+  Author:    { desc:'Create & edit posts', perms:['posts:read','posts:write'], color:'pill-blue' },
+  Moderator: { desc:'Moderate comments, view users', perms:['posts:read','users:read','comments:mod'], color:'pill-warn' },
+  Admin:     { desc:'Full access', perms:[...PERMS], color:'pill-green' },
+};
+
+const USERS = [
+  { name:'Alice', init:'AL', role:'Admin', email:'alice@example.com', av:'av-green', active:true },
+  { name:'Bob',   init:'BO', role:'Author', email:'bob@example.com', av:'av-blue', active:true },
+  { name:'Carol', init:'CA', role:'Viewer', email:'carol@example.com', av:'av-warn', active:true },
+  { name:'Dave',  init:'DV', role:'Moderator', email:'dave@example.com', av:'av-red', active:true },
+];
+
+const API_ENDPOINTS = [
+  { method:'GET',   path:'/permissions', desc:'List all registered permissions' },
+  { method:'POST',  path:'/permissions', desc:'Register a new permission (name, description)' },
+  { method:'GET',   path:'/roles', desc:'List all roles with their permissions' },
+  { method:'POST',  path:'/roles', desc:'Create a new role' },
+  { method:'POST',  path:'/roles/{name}/permissions', desc:'Grant a permission to a role' },
+  { method:'DELETE',path:'/roles/{name}/permissions/{perm}', desc:'Revoke a permission from a role' },
+  { method:'GET',   path:'/users', desc:'List users with their effective permissions' },
+  { method:'POST',  path:'/users', desc:'Create a new user (no roles yet)' },
+  { method:'GET',   path:'/users/{id}', desc:'Get a single user with all details' },
+  { method:'POST',  path:'/users/{id}/roles', desc:'Assign a role to a user' },
+  { method:'DELETE',path:'/users/{id}/roles/{role}', desc:'Revoke a role from a user' },
+  { method:'PATCH', path:'/users/{id}/deactivate', desc:'Deactivate user (blocks all access)' },
+  { method:'POST',  path:'/check', desc:'Core gate: does user X have permission Y on resource Z?' },
+  { method:'GET',   path:'/audit', desc:'Return last N access decisions (default 50)' },
+];
+
+const methodClass = { GET:'m-get', POST:'m-post', DELETE:'m-del', PATCH:'m-patch' };
+
+let auditLog = [];
+
+function showTab(name) {
+  document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.tab[onclick="showTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function renderRoles() {
+  const grid = document.getElementById('roles-grid');
+  grid.innerHTML = Object.entries(ROLES).map(([name, r]) => `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span class="pill ${r.color}">${name}</span>
+        <span style="font-size:12px;color:var(--color-text-secondary)">${r.desc}</span>
+      </div>
+      <div>${r.perms.map(p=>`<span class="pill pill-blue">${p}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function renderUsers() {
+  const grid = document.getElementById('users-grid');
+  grid.innerHTML = `<div class="grid-2">${USERS.map(u=>`
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="user-avatar ${u.av}">${u.init}</div>
+        <div>
+          <div class="card-title">${u.name}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary)">${u.email}</div>
+        </div>
+      </div>
+      <span class="pill ${ROLES[u.role].color}">${u.role}</span>
+      <div style="margin-top:8px;">${ROLES[u.role].perms.map(p=>`<span class="pill pill-blue">${p}</span>`).join('')}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderMatrix() {
+  const table = document.getElementById('matrix-table');
+  const header = `<thead><tr><th>User / Role</th>${PERMS.map(p=>`<th class="perm-col" style="font-family:var(--font-mono);font-size:10px;white-space:nowrap;">${p}</th>`).join('')}</tr></thead>`;
+  const body = USERS.map(u => {
+    const perms = ROLES[u.role].perms;
+    const cells = PERMS.map(p => `<td class="perm-col">${perms.includes(p)? '<span class="check">✓</span>' : '<span class="cross">–</span>'}</td>`).join('');
+    return `<tr><td><div style="display:flex;align-items:center;gap:6px;"><div class="user-avatar ${u.av}" style="width:22px;height:22px;font-size:10px;">${u.init}</div><div><div style="font-size:12px;font-weight:500;">${u.name}</div><div style="font-size:10px;color:var(--color-text-secondary);">${u.role}</div></div></div></td>${cells}</tr>`;
+  }).join('');
+  table.innerHTML = header + '<tbody>' + body + '</tbody>';
+}
+
+function renderAPI() {
+  const list = document.getElementById('api-list');
+  list.innerHTML = API_ENDPOINTS.map(e => `
+    <div class="api-block">
+      <div class="api-header">
+        <span class="method ${methodClass[e.method]}">${e.method}</span>
+        <span class="api-path">${e.path}</span>
+      </div>
+      <div class="api-desc">${e.desc}</div>
+    </div>
+  `).join('');
+}
+
+function canAccess(user, perm) {
+  const u = USERS.find(x => x.name.toLowerCase() === user);
+  if (!u || !u.active) return false;
+  return ROLES[u.role].perms.includes(perm);
+}
+
+function renderAudit() {
+  const log = document.getElementById('audit-log');
+  if (auditLog.length === 0) {
+    log.innerHTML = `<div style="font-size:12px;color:var(--color-text-tertiary);padding:8px 0;">No checks yet — try the checker above.</div>`;
+    return;
+  }
+  log.innerHTML = [...auditLog].reverse().map(e => `
+    <div class="audit-row">
+      <div class="audit-dot ${e.granted?'dot-green':'dot-red'}"></div>
+      <span style="color:var(--color-text-secondary);min-width:52px;">${e.time}</span>
+      <span style="font-weight:500;min-width:50px;">${e.user}</span>
+      <span style="font-family:var(--font-mono);font-size:11px;flex:1;color:var(--color-text-secondary);">${e.perm}</span>
+      <span class="pill ${e.granted?'pill-green':'pill-red'}">${e.granted?'granted':'denied'}</span>
+    </div>
+  `).join('');
+}
+
+function runCheck() {
+  const user = document.getElementById('ck-user').value;
+  const perm = document.getElementById('ck-perm').value;
+  const res = document.getElementById('ck-res').value;
+  const granted = canAccess(user, perm);
+  const u = USERS.find(x => x.name.toLowerCase() === user);
+  const now = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  auditLog.push({ time:now, user:u.name, perm, resource:res, granted });
+  renderAudit();
+
+  const box = document.getElementById('check-result');
+  box.style.display = 'block';
+  box.className = 'result-box ' + (granted ? 'result-grant' : 'result-deny');
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:20px;">${granted?'✅':'🚫'}</span>
+      <span style="font-size:14px;font-weight:500;color:var(--color-text-${granted?'success':'danger'})">${granted?'Access granted':'Access denied'}</span>
+    </div>
+    <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.7;">
+      <b>${u.name}</b> (${u.role}) ${granted?'has':'does not have'} <b>${perm}</b> permission${granted?' — granted by the <b>'+u.role+'</b> role.':', which is not assigned to the <b>'+u.role+'</b> role.'}
+    </div>
+  `;
+}
+
+renderRoles(); renderUsers(); renderMatrix(); renderAPI(); renderAudit();
+</script>
